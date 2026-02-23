@@ -26,12 +26,25 @@
 
 # 3. Define a function with a generator which can iterate the numbers, which are divisible by 3 and 4, between a given range 0 and n.
 
-def iteratediv34(n:int):
-    a = []
-    for i in range(3,n+1):
-        if i%3==0 and i%4==0:
-            a.append(i)
-    print(",".join(map(str, a)))
+# def iteratediv34(n:int):
+#     a = []
+#     for i in range(3,n+1):
+#         if i%3==0 and i%4==0:
+#             yield i
+#     # print(",".join(map(str, a)))
 
-n = int(input())
-iteratediv34(n)
+# n = int(input())
+# for number in iteratediv34(n):
+#     print(number)
+
+
+
+# 4. Implement a generator called squares to yield the square of all numbers from (a) to (b). 
+# Test it with a "for" loop and print each of the yielded values.
+
+# def sq(a,b):
+#     for i in range(a,b+1):
+#         yield i*i
+    
+# for value in sq(1,5):
+#     print(value)
