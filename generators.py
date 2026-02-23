@@ -1,25 +1,28 @@
 # 1. the squares of numbers up to some number N
 
+# import math
+
 # def showsquares(n : int):
 #     for i in range(1, math.isqrt(n)+1):
-#         print(i**2, end=" ")
+#         yield i * i
 
-# import math
 # n = int(input())
-# showsquares(n)
+
+# for sq in showsquares(n):
+#     print(sq, end=" ")
 
 
 
 # 2. Write a program using generator to print the even numbers between 0 and n in comma separated form where n is input from console.
 
-def evengenerator(n: int):
-    for i in range(1,n+1,2):
-        yield i
+# def evengenerator(n: int):
+#     for i in range(1,n+1,2):
+#         yield i
 
-n = int(input())
-m = [str(i) for i in evengenerator(n)]
+# n = int(input())
+# m = [str(i) for i in evengenerator(n)]
 
-print(", ".join(m))
+# print(", ".join(m))
 
 
 # 3. Define a function with a generator which can iterate the numbers, which are divisible by 3 and 4, between a given range 0 and n.
