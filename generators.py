@@ -12,16 +12,14 @@
 
 # 2. Write a program using generator to print the even numbers between 0 and n in comma separated form where n is input from console.
 
-# def evengenerator(n : int):
-#     for i in range(1,n+1,2):
-#         if i == n-1 or i == n:
-#             print(i, end="")
-#             break
-    
-#         print(f"{i}, ",end="")
+def evengenerator(n: int):
+    for i in range(1,n+1,2):
+        yield i
 
-# n = int(input())
-# evengenerator(n)
+n = int(input())
+m = [str(i) for i in evengenerator(n)]
+
+print(", ".join(m))
 
 
 # 3. Define a function with a generator which can iterate the numbers, which are divisible by 3 and 4, between a given range 0 and n.
@@ -48,3 +46,15 @@
     
 # for value in sq(1,5):
 #     print(value)
+
+
+
+# 5. Implement a generator that returns all numbers from (n) down to 0.
+
+# def countdown(n):
+#     while n >= 0:
+#         yield n
+#         n -= 1
+
+# for n in countdown(5):
+#     print(n)
