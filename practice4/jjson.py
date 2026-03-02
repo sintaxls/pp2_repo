@@ -15,3 +15,5 @@ for item in data["imdata"]:
     mtu = att["mtu"]
 
     print(f"{dn:50} {speed:10} {mtu:6}")
+
+
