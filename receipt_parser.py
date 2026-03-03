@@ -24,10 +24,7 @@
 # from pathlib import Path
 
 # product_pattern = re.compile(
-# 	r"^\d+\.\s*\n"
-# 	r"(?P<name>.*?)\n",
-# 	re.MULTILINE,
-# )
+# 	r"^\d+\.\s*\n(?P<name>.*?)\n", re.MULTILINE,)
 
 # def getnames(text: str) -> list[str]:
 # 	return [m.group("name").strip() for m in product_pattern.finditer(text)]
