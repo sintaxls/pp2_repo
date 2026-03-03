@@ -3,18 +3,16 @@
 # import re
 # from pathlib import Path
 
-# price_pattern = re.compile(r"\b\d{1,3}(?: \d{3})*,\d{2}\b")
-
-# def extract_prices(text: str) -> list[str]:
-# 	return price_pattern.findall(text)
-
-
 # pth = Path(__file__).with_name("raw.txt")
 # text = pth.read_text(encoding="utf-8")
-# prices = extract_prices(text)
 
-# for price in prices:
-#     print(price)
+# pattern = re.compile(r"^Стоимость\s*\r?\n(?P<Price>\d+[0-9 ]*,\d{2})$", re.MULTILINE)
+
+# m = pattern.findall(text)
+
+# for i in m:
+#     print(i)
+
 
 
 
@@ -63,7 +61,7 @@
 #     match = amount_pattern.search(text)
 #     if not match:
 #         print("Amount was not found")
-#         return
+#         return -1.0
     
 #     amount_str = match.group("tot_amount")
 #     return to_num(amount_str)
@@ -115,3 +113,36 @@
 #     print(m.group("method"))
 # else:
 #     print("Not found")
+
+
+
+
+
+
+# example with finding words with letter т
+# import re
+# from pathlib import Path
+
+# pth = Path(__file__).with_name("raw.txt")
+# text = pth.read_text(encoding="utf-8")
+
+# pattern = re.compile(r"\b\w*т\w*\b", re.IGNORECASE)
+
+
+# print(pattern.findall(text))
+
+
+
+# example with finding any word which contains a number 
+# import re
+# from pathlib import Path
+
+# pth = Path(__file__).with_name("raw.txt")
+# text = pth.read_text(encoding="utf-8")
+
+# pattern = re.compile(r"\b\S*\d\S*\b", re.IGNORECASE)
+
+
+# print(pattern.findall(text))
+
+
