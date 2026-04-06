@@ -192,13 +192,40 @@ def find_using_function():
     else:
         print("No results found")
 
+
+def insert_using_function():
+    first_n = input("first name: ")
+    last_n = input("last name: ")
+    phone = input("phone: ")
+    
+    conn = connect()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("CALL public.insert_user(%s, %s, %s)", 
+                       (first_n, last_n, phone))
+        conn.commit()
+        print("Success")
+    except Exception as e:
+        print(f"err: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+
+
+
+#######################################################################
+
+
+
 if __name__ == "__main__":
     create_phonebook_table()
     print_tb()
     print()
 
     while True:
-        whatchoose = int(input("1 - update contact, 2 - search querry\n3 - add contact, 4 - delete contact\n5 - find using functions\n"))
+        whatchoose = int(input("1 - update contact, 2 - search querry\n3 - add contact, 4 - delete contact\n\n5 - find using functions\n6 - insert using procedure\n"))
         if whatchoose == 1:
             update_contact()
             print()
@@ -221,6 +248,9 @@ if __name__ == "__main__":
             print()
             print()
             input("Press any button ")
-        
+        elif whatchoose == 6:
+            insert_using_function()
+            print()
+            print()
         print_tb()
 
