@@ -175,13 +175,30 @@ def add_contact():
     except Exception as e:
         print(f"Error: {e}")
 
+def find_using_function():
+    search_item = input("Search item:")
+    
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM public.search_records(%s)", (search_item,))
+
+    rows = cursor.fetchall()
+    if rows:
+        header = [desc[0] for desc in cursor.description]
+        print(f"{header[0]:<5} {header[1]:<15} {header[2]:<15} {header[3]:<20}")
+        print("-" * 60)
+        for row in rows:
+            print(f"{row[0]:<5} {row[1]:<15} {row[2]:<15} {row[3]:<20}")
+    else:
+        print("No results found")
+
 if __name__ == "__main__":
     create_phonebook_table()
     print_tb()
     print()
 
     while True:
-        whatchoose = int(input("1 - update contact, 2 - search querry\n3 - add contact, 4 - delete contact\n"))
+        whatchoose = int(input("1 - update contact, 2 - search querry\n3 - add contact, 4 - delete contact\n5 - find using functions\n"))
         if whatchoose == 1:
             update_contact()
             print()
@@ -199,6 +216,11 @@ if __name__ == "__main__":
             delete_contact()
             print()
             print()
+        elif whatchoose == 5:
+            find_using_function()
+            print()
+            print()
+            input("Press any button ")
         
         print_tb()
 
