@@ -53,3 +53,26 @@ BEGIN
     END LOOP;
 END;
 $$;
+
+CREATE OR REPLACE PROCEDURE public.delete_by_id_or_phone(
+    IN p_id INT DEFAULT NULL,
+    IN p_phone VARCHAR(20) DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_id IS NOT NULL THEN
+        DELETE FROM phonebook
+        WHERE id = p_id;
+
+    ELSIF p_phone IS NOT NULL AND btrim(p_phone) <> '' THEN
+        DELETE FROM phonebook
+        WHERE phone_number = p_phone;
+
+    ELSE
+        RAISE EXCEPTION 'Provide either id or phone number';
+    END IF;
+END;
+$$;
+
+-- TO APPLY THE CHANGES: \i practice7and8/procedures.sql

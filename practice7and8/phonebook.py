@@ -248,7 +248,69 @@ def insert_many_users_using_procedures():
         conn.close()
 
 
+def show_paginated_contacts():
+    lim = int(input("Limit: "))
+    offst = int(input("Offset: "))
 
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT * FROM public.phonebook_paginate(%s, %s)",
+            (lim, offst)
+        )
+        rows = cursor.fetchall()
+
+        if rows:
+            header = [desc[0] for desc in cursor.description]
+            print(f"{header[0]:<5} {header[1]:<15} {header[2]:<15} {header[3]:<20}")
+            print("-" * 60)
+            for row in rows:
+                print(f"{row[0]:<5} {row[1]:<15} {row[2]:<15} {row[3]:<20}")
+            input("Press any button ")
+        else:
+            print("No rows found")
+
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+def delete_by_id_or_phone():
+
+    what = input("1 - id, 2 - phone\n")
+
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+
+        if what == "1":
+            phone_id = int(input("ID: "))
+            cursor.execute(
+                "CALL public.delete_by_id_or_phone(%s, %s)",
+                (phone_id, None)
+            )
+        elif what == "2":
+            phone = input("phone: ")
+            cursor.execute(
+                "CALL public.delete_by_id_or_phone(%s, %s)",
+                (None, phone)
+            )
+        else:
+            print("Invalid option")
+            return
+
+        conn.commit()
+        print("Deleted successfully")
+
+    except Exception as e:
+        conn.rollback()
+        print(f"Error: {e}")
+    finally:
+        cursor.close()
+        conn.close()
 #######################################################################
 
 
@@ -259,7 +321,7 @@ if __name__ == "__main__":
     print()
 
     while True:
-        whatchoose = int(input("1 - update contact, 2 - search querry\n3 - add contact, 4 - delete contact\n\n5 - find using functions\n6 - insert using procedure\n7 - insert many users using procedures\n\n"))
+        whatchoose = int(input("1 - update contact, 2 - search querry\n3 - add contact, 4 - delete contact\n\n5 - find using functions\n6 - insert using procedure\n7 - insert many users using procedures\n8 - paginate\n9 - delete by id or phone using procedure\n"))
         if whatchoose == 1:
             update_contact()
             print()
@@ -288,6 +350,14 @@ if __name__ == "__main__":
             print()
         elif whatchoose == 7:
             insert_many_users_using_procedures()
+            print()
+            print()
+        elif whatchoose == 8:
+            show_paginated_contacts()
+            print()
+            print()
+        elif whatchoose == 9:
+            delete_by_id_or_phone()
             print()
             print()
         print_tb()
