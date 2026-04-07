@@ -2,6 +2,7 @@ import psycopg2
 from pathlib import Path
 from config import DB_HOST, DB_USER, DB_NAME, DB_PASSWORD
 from connect import connect
+import json
 csv_path = Path(__file__).resolve().parent / "contacts.csv"
 
 def create_phonebook_table():
@@ -213,6 +214,39 @@ def insert_using_function():
         conn.close()
 
 
+def insert_many_users_using_procedures():
+    n = int(input("How many: "))
+    arr = []
+    for i in range(n):
+        arr.append({"first_name":input('first_name: '), 
+                  "last_name":input('last_name: '),
+                  "phone_number":input('phone_number: '),})
+        print()
+    print(arr)
+    
+    # print(f'''SELECT public.insert_many_users_fn(
+    #     '{str(arr)}'::jsonb
+    # );''')
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+
+        payload = json.dumps(arr)
+
+        cursor.execute("CALL public.insert_many_users(%s::jsonb, %s::jsonb);",
+            (payload, "[]"))
+        conn.commit()
+
+        invalid_rows = cursor.fetchone()[0]
+        
+        print("Invalid rows:", invalid_rows)
+    except Exception as e:
+        conn.rollback()
+        print(f"error: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
 
 
 #######################################################################
@@ -225,7 +259,7 @@ if __name__ == "__main__":
     print()
 
     while True:
-        whatchoose = int(input("1 - update contact, 2 - search querry\n3 - add contact, 4 - delete contact\n\n5 - find using functions\n6 - insert using procedure\n"))
+        whatchoose = int(input("1 - update contact, 2 - search querry\n3 - add contact, 4 - delete contact\n\n5 - find using functions\n6 - insert using procedure\n7 - insert many users using procedures\n\n"))
         if whatchoose == 1:
             update_contact()
             print()
@@ -252,5 +286,10 @@ if __name__ == "__main__":
             insert_using_function()
             print()
             print()
+        elif whatchoose == 7:
+            insert_many_users_using_procedures()
+            print()
+            print()
         print_tb()
+
 
