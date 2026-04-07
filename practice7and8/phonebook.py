@@ -231,10 +231,10 @@ def insert_many_users_using_procedures():
         conn = connect()
         cursor = conn.cursor()
 
-        payload = json.dumps(arr)
+        loadd = json.dumps(arr)
 
         cursor.execute("CALL public.insert_many_users(%s::jsonb, %s::jsonb);",
-            (payload, "[]"))
+            (loadd, "[]"))
         conn.commit()
 
         invalid_rows = cursor.fetchone()[0]
