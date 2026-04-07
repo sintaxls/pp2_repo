@@ -194,7 +194,7 @@ def find_using_function():
         print("No results found")
 
 
-def insert_using_function():
+def insert_using_procedure():
     first_n = input("first name: ")
     last_n = input("last name: ")
     phone = input("phone: ")
@@ -345,7 +345,7 @@ if __name__ == "__main__":
             print()
             input("Press any button ")
         elif whatchoose == 6:
-            insert_using_function()
+            insert_using_procedure()
             print()
             print()
         elif whatchoose == 7:
