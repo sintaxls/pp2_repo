@@ -70,7 +70,7 @@ BEGIN
         WHERE phone_number = p_phone;
 
     ELSE
-        RAISE EXCEPTION 'Provide either id or phone number';
+        RAISE EXCEPTION 'No id or phone number';
     END IF;
 END;
 $$;
