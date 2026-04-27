@@ -1,6 +1,7 @@
 import pygame as pg
 import random
 import sys
+import json
 pg.init()
 
 # SCREEN
@@ -61,6 +62,7 @@ x_line_offset = 0
 
 # MENU
 inmenu = True
+top10 = False
 
 GREEN = (84, 146, 23)
 BLACK = (0, 0, 0)
@@ -81,19 +83,34 @@ coins = []
 coin_width = 22
 coin_height = 25
 
+powerups = []
+power_width = 30
+power_height = 30
+
 
 # MANHOLE
 manhole = pg.image.load('TSIS3/assets/manhole.png')
 manhole = pg.transform.scale(manhole, (65, 65))
+traffic_car = pg.image.load('TSIS3/assets/pixel_car3_100.png')
 score = 0
 max_score = 0
 last_score = 0
+distance = 0
+last_distance = 0
 
 # COINS
 coin = pg.image.load('TSIS3/assets/coin.png')
 coin = pg.transform.scale(coin, (coin_width, coin_height))
 coin2 = pg.image.load('TSIS3/assets/coin2.png')
 coin2 = pg.transform.scale(coin2, (coin_width, coin_height))
+
+# POWERUPS
+nitro = pg.image.load('TSIS3/assets/nitro.png')
+nitro = pg.transform.scale(nitro, (power_width, power_height))
+shield = pg.image.load('TSIS3/assets/shield.png')
+shield = pg.transform.scale(shield, (power_width, power_height))
+repair = pg.image.load('TSIS3/assets/repair.png')
+repair = pg.transform.scale(repair, (power_width, power_height))
 
 blue_score = 0
 pink_score = 0
@@ -104,8 +121,57 @@ pink_coins = 0
 last_blue_coins = 0
 last_pink_coins = 0
 
+blue_nitro_time = 0
+pink_nitro_time = 0
+blue_shield_time = 0
+pink_shield_time = 0
+blue_repair_time = 0
+pink_repair_time = 0
+blue_shield = 0
+pink_shield = 0
+blue_repair = 0
+pink_repair = 0
+
 # DIFFICULTY
-difficulty = 0.5
+settings_file = 'TSIS3/settings.json'
+leaderboard_file = 'TSIS3/leaderboard.json'
+
+def load_settings():
+    try:
+        file = open(settings_file, 'r')
+        data = json.load(file)
+        file.close()
+        return data.get('difficulty', 0.5)
+    except:
+        return 0.5
+
+def save_settings():
+    file = open(settings_file, 'w')
+    json.dump({'difficulty': difficulty}, file)
+    file.close()
+
+def load_leaderboard():
+    try:
+        file = open(leaderboard_file, 'r')
+        data = json.load(file)
+        file.close()
+        if type(data) == list:
+            return data
+        return data.get('scores', [])
+    except:
+        return []
+
+def save_leaderboard():
+    scores = load_leaderboard()
+    scores.append({'name': blue_name, 'score': int(blue_score), 'distance': round(distance, 2)})
+    scores.append({'name': pink_name, 'score': int(pink_score), 'distance': round(distance, 2)})
+    scores = sorted(scores, key=lambda item: (item['score'], item['distance']), reverse=True)
+    scores = scores[:10]
+    file = open(leaderboard_file, 'w')
+    json.dump(scores, file)
+    file.close()
+
+difficulty = load_settings()
 
 # DRAW BUTTON
 def draw_button(x, y, width, height, color, hover_color, text, text_color):
@@ -127,9 +193,52 @@ def draw_button(x, y, width, height, color, hover_color, text, text_color):
 
     return clicked
 
+def draw_text_box(x, y, width, height, text, active):
+    if active:
+        color = YELLOW
+    else:
+        color = WHITE
+    pg.draw.rect(screen, color, (x, y, width, height), border_radius=8)
+    pg.draw.rect(screen, BLACK, (x, y, width, height), 2, border_radius=8)
+    text_surface = button_font.render(text, True, BLACK)
+    screen.blit(text_surface, (x + 10, y - 1))
+
+def top10_page():
+    global top10, inmenu, running
+    while top10:
+        screen.fill(GREEN)
+        text_surface = font.render("top 10", True, BLACK)
+        screen.blit(text_surface, (245, 25))
+
+        scores = load_leaderboard()
+        y = 75
+        scores = scores[:10]
+        for i in range(len(scores)):
+            item = scores[i]
+            text = f"{i + 1}. {item['name']}  {item['score']}  {item['distance']} km"
+            score_text = button_font.render(text, True, BLACK)
+            screen.blit(score_text, (80, y))
+            y += 28
+
+        if draw_button(20, 10, 95, 30, YELLOW, GRAY, "back", BLACK):
+            top10 = False
+            inmenu = True
+            return
+
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                top10 = False
+                running = False
+                return
+
+        pg.display.update()
+
 setts = False
 dragging = False
 firstwin = None
+active_name = 0
+blue_name = "player 1"
+pink_name = "player 2"
 def settings_page():
     global difficulty, dragging, inmenu, setts
     settings_running = True
@@ -139,6 +248,7 @@ def settings_page():
         screen.blit(text_surface, (230, 30))
         # BACK
         if draw_button(20, 10, 95, 30, YELLOW, GRAY, "back", BLACK):
+            save_settings()
             inmenu = True
             setts = False
             return
@@ -162,6 +272,7 @@ def settings_page():
 
         for event in pg.event.get():
             if event.type == pg.QUIT:
+                save_settings()
                 settings_running = False
             elif event.type == pg.MOUSEBUTTONDOWN:
                 # CHECK FOR CLICK ON CIRCLE
@@ -178,55 +289,96 @@ def settings_page():
 running = True
 while running:
     # MENU
-    if inmenu and not setts:
+    if inmenu and not setts and not top10:
         screen.fill(GREEN)
 
         text_surface = font.render("drive drunk!", True, BLACK)
         screen.blit(text_surface, (190, 30))
 
         text_max_score = font.render(f"max score: {int(max_score)}", True, BLACK)
-        screen.blit(text_max_score, (190, 80))
+        screen.blit(text_max_score, (190, 70))
 
         text_max_score = font.render(f"last score: {int(last_score)}", True, BLACK)
-        screen.blit(text_max_score, (190, 120))
+        screen.blit(text_max_score, (190, 105))
+
+        text_distance = button_font.render(f"last distance: {round(last_distance, 2)} km", True, BLACK)
+        screen.blit(text_distance, (190, 140))
 
         text_blue_score = button_font.render(f"blue score: {int(last_blue_score)}", True, BLACK)
-        screen.blit(text_blue_score, (190, 165))
+        screen.blit(text_blue_score, (190, 175))
 
         text_pink_score = button_font.render(f"pink score: {int(last_pink_score)}", True, BLACK)
-        screen.blit(text_pink_score, (190, 195))
+        screen.blit(text_pink_score, (190, 205))
 
         text_blue_coins = button_font.render(f"blue coins: {int(last_blue_coins)}", True, BLACK)
-        screen.blit(text_blue_coins, (190, 225))
+        screen.blit(text_blue_coins, (190, 235))
 
         text_pink_coins = button_font.render(f"pink coins: {int(last_pink_coins)}", True, BLACK)
-        screen.blit(text_pink_coins, (190, 255))
+        screen.blit(text_pink_coins, (190, 265))
 
         if firstwin == True:
             text_max_score = font.render(f"blue wins!", True, BLACK)
-            screen.blit(text_max_score, (190, 305))
+            screen.blit(text_max_score, (190, 315))
         elif firstwin == False:
             text_max_score = font.render(f"pink wins!", True, BLACK)
-            screen.blit(text_max_score, (190, 305))
+            screen.blit(text_max_score, (190, 315))
+
+        player_text = button_font.render("blue name", True, BLACK)
+        screen.blit(player_text, (20, 70))
+        draw_text_box(20, 95, 140, 30, blue_name, active_name == 1)
+
+        player_text = button_font.render("pink name", True, BLACK)
+        screen.blit(player_text, (20, 135))
+        draw_text_box(20, 160, 140, 30, pink_name, active_name == 2)
 
         # START
-        if draw_button(20, 180, 95, 30, YELLOW, GRAY, "start", BLACK):
+        if draw_button(20, 205, 95, 30, YELLOW, GRAY, "start", BLACK):
+            if blue_name == "":
+                blue_name = "player 1"
+            if pink_name == "":
+                pink_name = "player 2"
+            distance = 0
             inmenu = False
         # SETTINGS
-        if draw_button(20, 220, 95, 30, WHITE, GRAY, "settings", BLACK):
+        if draw_button(20, 245, 95, 30, WHITE, GRAY, "settings", BLACK):
             setts = True
+        # TOP 10
+        if draw_button(20, 285, 95, 30, WHITE, GRAY, "top 10", BLACK):
+            top10 = True
         # QUIT
-        if draw_button(20, 260, 95, 30, WHITE, GRAY, "quit", BLACK):
+        if draw_button(20, 325, 95, 30, WHITE, GRAY, "quit", BLACK):
             sys.exit()
 
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
+            elif event.type == pg.MOUSEBUTTONDOWN:
+                if 20 <= event.pos[0] <= 160 and 95 <= event.pos[1] <= 125:
+                    active_name = 1
+                elif 20 <= event.pos[0] <= 160 and 160 <= event.pos[1] <= 190:
+                    active_name = 2
+                else:
+                    active_name = 0
+            elif event.type == pg.KEYDOWN:
+                if active_name == 1:
+                    if event.key == pg.K_BACKSPACE:
+                        blue_name = blue_name[:-1]
+                    elif len(blue_name) < 10:
+                        blue_name += event.unicode.lower()
+                elif active_name == 2:
+                    if event.key == pg.K_BACKSPACE:
+                        pink_name = pink_name[:-1]
+                    elif len(pink_name) < 10:
+                        pink_name += event.unicode.lower()
 
         pg.display.update()
 
+    # TOP 10
+    elif top10:
+        top10_page()
+
     # GAME
-    elif not inmenu and not setts:
+    elif not inmenu and not setts and not top10:
         screen.fill((0, 0, 0))
         screen.blit(main_surf, (0, 0))
 
@@ -236,31 +388,40 @@ while running:
 
         # ROAD MOVEMENT
         x_line_offset = (x_line_offset + lspeed / fps / (1.05 - difficulty)) % tile_width
+        distance += (lspeed / fps / (1.05 - difficulty)) / 1000
         for i in range(-1, WIDTH // tile_width + 2):
             screen.blit(tile_surf, (i * tile_width - x_line_offset, 0))
 
         # CAR MOVEMENT
+        now = pg.time.get_ticks()
+        blue_speed = 1
+        pink_speed = 1
+        if blue_nitro_time > now:
+            blue_speed = 1.5
+        if pink_nitro_time > now:
+            pink_speed = 1.5
+
         keys = pg.key.get_pressed()
         if keys[pg.K_UP] and cy > -25:
-            cy -= y_speed
+            cy -= y_speed * blue_speed
         elif keys[pg.K_DOWN]and cy < WIDTH - 270:
-            cy += y_speed
+            cy += y_speed * blue_speed
 
         if keys[pg.K_LEFT] and cx > -25:
-            cx -= x_speed
+            cx -= x_speed * blue_speed
         elif keys[pg.K_RIGHT] and cx < WIDTH - 70:
-            cx += x_speed
+            cx += x_speed * blue_speed
 
         # CAR 2
         if keys[pg.K_w] and cy2 > -25:
-            cy2 -= y_speed
+            cy2 -= y_speed * pink_speed
         elif keys[pg.K_s] and cy2 < WIDTH - 270:
-            cy2 += y_speed
+            cy2 += y_speed * pink_speed
 
         if  keys[pg.K_a] and cx2 > -25:
-            cx2 -= x_speed
+            cx2 -= x_speed * pink_speed
         elif keys[pg.K_d] and cx2 < WIDTH - 70:
-            cx2 += x_speed
+            cx2 += x_speed * pink_speed
 
         # CAR RECTS
         car_rect = car_img.get_rect(topleft=(cx+10, cy+45))
@@ -282,13 +443,24 @@ while running:
 
         # OBSTACLE SPAWN
         if random.random() < difficulty * 0.02:
-            obs_y = random.randint(105, 105 + 191 - obstacle_height)
-            obstacles.append({
-                'x': float(WIDTH),
-                'y': obs_y,
-                'width': obstacle_width,
-                'height': obstacle_height
-            })
+            if random.random() < 0.7:
+                obs_y = random.randint(105, 105 + 191 - obstacle_height)
+                obstacles.append({
+                    'x': float(WIDTH),
+                    'y': obs_y,
+                    'width': obstacle_width,
+                    'height': obstacle_height,
+                    'type': 'manhole'
+                })
+            else:
+                obs_y = random.randint(105, 105 + 191 - 20)
+                obstacles.append({
+                    'x': float(WIDTH),
+                    'y': obs_y,
+                    'width': 80,
+                    'height': 20,
+                    'type': 'traffic'
+                })
 
         # COIN SPAWN
         if random.random() < difficulty * 0.02:
@@ -300,7 +472,10 @@ while running:
             coin_rect = pg.Rect(WIDTH, coin_y, coin_width, coin_height)
             can_spawn = True
             for obstacle in obstacles:
-                obstacle_rect = pg.Rect(obstacle['x'] - 15, obstacle['y'] - 15, 65, 65)
+                if obstacle['type'] == 'manhole':
+                    obstacle_rect = pg.Rect(obstacle['x'] - 15, obstacle['y'] - 15, 65, 65)
+                else:
+                    obstacle_rect = pg.Rect(obstacle['x'], obstacle['y'], obstacle['width'], obstacle['height'])
                 if coin_rect.colliderect(obstacle_rect):
                     can_spawn = False
 
@@ -313,56 +488,131 @@ while running:
                     'value': coin_value
                 })
 
+        # POWERUP SPAWN
+        if random.random() < difficulty * 0.01:
+            power_y = random.randint(105, 105 + 191 - power_height)
+            power_type = random.choice(['nitro', 'shield', 'repair'])
+
+            power_rect = pg.Rect(WIDTH, power_y, power_width, power_height)
+            can_spawn = True
+            for obstacle in obstacles:
+                if obstacle['type'] == 'manhole':
+                    obstacle_rect = pg.Rect(obstacle['x'] - 15, obstacle['y'] - 15, 65, 65)
+                else:
+                    obstacle_rect = pg.Rect(obstacle['x'], obstacle['y'], obstacle['width'], obstacle['height'])
+                if power_rect.colliderect(obstacle_rect):
+                    can_spawn = False
+
+            if can_spawn:
+                powerups.append({
+                    'x': float(WIDTH),
+                    'y': power_y,
+                    'width': power_width,
+                    'height': power_height,
+                    'type': power_type
+                })
+
         # MOVE OBSTACLE
         obstacle_speed = base_obstacle_speed / fps / (1.05 - difficulty)
         for obstacle in obstacles:
             obstacle['x'] -= obstacle_speed
             obstacle_rect = pg.Rect(obstacle['x'], obstacle['y'], obstacle['width'], obstacle['height'])
             # pg.draw.rect(screen, (255, 0, 0), obstacle_rect)
-            # DRAW MANHOLE
-            screen.blit(manhole, (obstacle['x']-15, obstacle['y']-15))
+            # DRAW OBSTACLE
+            if obstacle['type'] == 'manhole':
+                screen.blit(manhole, (obstacle['x']-15, obstacle['y']-15))
+            else:
+                screen.blit(traffic_car, (obstacle['x']-10, obstacle['y']-45))
 
             # COLLISION
             if car_rect.colliderect(obstacle_rect): #or car_top_rect.colliderect(obstacle_rect):
-                inmenu = True
-                obstacles = []
-                coins = []
-                last_blue_score = blue_score
-                last_pink_score = pink_score
-                last_blue_coins = blue_coins
-                last_pink_coins = pink_coins
-                last_score = score
-                score = 0
-                blue_score = 0
-                pink_score = 0
-                blue_coins = 0
-                pink_coins = 0
-                cx = 0
-                cy = 200
+                if blue_repair == 1 and blue_repair_time > now and obstacle['type'] == 'manhole':
+                    blue_repair = 0
+                    obstacles.remove(obstacle)
+                    continue
+                elif blue_shield == 1 and blue_shield_time > now:
+                    blue_shield = 0
+                    obstacles.remove(obstacle)
+                    continue
+                else:
+                    inmenu = True
+                    obstacles = []
+                    coins = []
+                    powerups = []
+                    last_blue_score = blue_score
+                    last_pink_score = pink_score
+                    last_blue_coins = blue_coins
+                    last_pink_coins = pink_coins
+                    last_score = score
+                    last_distance = distance
+                    save_leaderboard()
+                    score = 0
+                    distance = 0
+                    blue_score = 0
+                    pink_score = 0
+                    blue_coins = 0
+                    pink_coins = 0
+                    blue_nitro_time = 0
+                    pink_nitro_time = 0
+                    blue_shield_time = 0
+                    pink_shield_time = 0
+                    blue_repair_time = 0
+                    pink_repair_time = 0
+                    blue_shield = 0
+                    pink_shield = 0
+                    blue_repair = 0
+                    pink_repair = 0
+                    cx = 0
+                    cy = 200
 
-                cx2 = 0
-                cy2 = 100
-                firstwin = False
+                    cx2 = 0
+                    cy2 = 100
+                    firstwin = False
+                    continue
 
             if car_rect2.colliderect(obstacle_rect): #or car_top_rect.colliderect(obstacle_rect):
-                inmenu = True
-                obstacles = []
-                coins = []
-                last_blue_score = blue_score
-                last_pink_score = pink_score
-                last_blue_coins = blue_coins
-                last_pink_coins = pink_coins
-                last_score = score
-                score = 0
-                blue_score = 0
-                pink_score = 0
-                blue_coins = 0
-                pink_coins = 0
-                cx = 0
-                cy = 200
-                cx2 = 0
-                cy2 = 100
-                firstwin = True
+                if pink_repair == 1 and pink_repair_time > now and obstacle['type'] == 'manhole':
+                    pink_repair = 0
+                    obstacles.remove(obstacle)
+                    continue
+                elif pink_shield == 1 and pink_shield_time > now:
+                    pink_shield = 0
+                    obstacles.remove(obstacle)
+                    continue
+                else:
+                    inmenu = True
+                    obstacles = []
+                    coins = []
+                    powerups = []
+                    last_blue_score = blue_score
+                    last_pink_score = pink_score
+                    last_blue_coins = blue_coins
+                    last_pink_coins = pink_coins
+                    last_score = score
+                    last_distance = distance
+                    save_leaderboard()
+                    score = 0
+                    distance = 0
+                    blue_score = 0
+                    pink_score = 0
+                    blue_coins = 0
+                    pink_coins = 0
+                    blue_nitro_time = 0
+                    pink_nitro_time = 0
+                    blue_shield_time = 0
+                    pink_shield_time = 0
+                    blue_repair_time = 0
+                    pink_repair_time = 0
+                    blue_shield = 0
+                    pink_shield = 0
+                    blue_repair = 0
+                    pink_repair = 0
+                    cx = 0
+                    cy = 200
+                    cx2 = 0
+                    cy2 = 100
+                    firstwin = True
+                    continue
 
             # ADD SCORE, REMOVE OBSTACLE
             if obstacle_rect.x + obstacle['width'] < 0:
@@ -401,6 +651,41 @@ while running:
             if max_score < score:
                 max_score = score
 
+        # MOVE POWERUPS
+        for powerup in powerups:
+            powerup['x'] -= obstacle_speed
+            power_rect = pg.Rect(powerup['x'], powerup['y'], powerup['width'], powerup['height'])
+
+            if powerup['type'] == 'nitro':
+                screen.blit(nitro, (powerup['x'], powerup['y']))
+            elif powerup['type'] == 'shield':
+                screen.blit(shield, (powerup['x'], powerup['y']))
+            else:
+                screen.blit(repair, (powerup['x'], powerup['y']))
+
+            if car_rect.colliderect(power_rect):
+                if powerup['type'] == 'nitro':
+                    blue_nitro_time = now + 3000
+                elif powerup['type'] == 'shield':
+                    blue_shield_time = now + 3000
+                    blue_shield = 1
+                else:
+                    blue_repair_time = now + 5000
+                    blue_repair = 1
+                powerups.remove(powerup)
+            elif car_rect2.colliderect(power_rect):
+                if powerup['type'] == 'nitro':
+                    pink_nitro_time = now + 3000
+                elif powerup['type'] == 'shield':
+                    pink_shield_time = now + 3000
+                    pink_shield = 1
+                else:
+                    pink_repair_time = now + 5000
+                    pink_repair = 1
+                powerups.remove(powerup)
+            elif power_rect.x + powerup['width'] < 0:
+                powerups.remove(powerup)
+
         # MINUS SCORE FOR CHEATING
         if cy < 50 or cy > 250:
             blue_score -= (2 / fps) * (difficulty * 10)
@@ -415,16 +700,30 @@ while running:
             inmenu = True
             obstacles = []
             coins = []
+            powerups = []
             last_blue_score = blue_score
             last_pink_score = pink_score
             last_blue_coins = blue_coins
             last_pink_coins = pink_coins
             last_score = score
+            last_distance = distance
+            save_leaderboard()
             score = 0
+            distance = 0
             blue_score = 0
             pink_score = 0
             blue_coins = 0
             pink_coins = 0
+            blue_nitro_time = 0
+            pink_nitro_time = 0
+            blue_shield_time = 0
+            pink_shield_time = 0
+            blue_repair_time = 0
+            pink_repair_time = 0
+            blue_shield = 0
+            pink_shield = 0
+            blue_repair = 0
+            pink_repair = 0
             cx = 0
             cy = 200
 
@@ -434,6 +733,9 @@ while running:
 
         score_text = button_font.render(f"pink score: {int(pink_score)}", True, YELLOW)
         screen.blit(score_text, (390, 40))
+
+        distance_text = button_font.render(f"distance: {round(distance, 2)} km", True, YELLOW)
+        screen.blit(distance_text, (390, 70))
 
         # DRAW CAR
         screen.blit(car_img, (cx, cy))
