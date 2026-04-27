@@ -3,7 +3,9 @@ from pathlib import Path
 from config import DB_HOST, DB_USER, DB_NAME, DB_PASSWORD
 from connect import connect
 import json
+import csv
 csv_path = Path(__file__).resolve().parent / "contacts.csv"
+json_path = Path(__file__).resolve().parent / "contacts.json"
 
 def create_phonebook_table():
     try:
@@ -62,7 +64,7 @@ def print_tb():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT 
+        SELECT
             p.id,
             p.first_name,
             p.last_name,
@@ -214,7 +216,7 @@ def search_by_email():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT 
+        SELECT
             p.id,
             p.first_name,
             p.last_name,
@@ -242,7 +244,7 @@ def filter_by_group():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT 
+        SELECT
             p.id,
             p.first_name,
             p.last_name,
@@ -279,6 +281,96 @@ def delete_contact():
 
     cursor.close()
     conn.close()
+
+
+def get_group_id(cursor, group_name):
+    if group_name == "" or group_name is None:
+        group_name = "Other"
+
+    cursor.execute(
+        """
+        INSERT INTO groups (name)
+        VALUES (%s)
+        ON CONFLICT (name) DO NOTHING
+        """,
+        (group_name,)
+    )
+
+    cursor.execute("SELECT id FROM groups WHERE name = %s", (group_name,))
+    return cursor.fetchone()[0]
+
+
+def get_phone_type(phone_type):
+    if phone_type in ("home", "work", "mobile"):
+        return phone_type
+    return "mobile"
+
+
+def insert_imported_contact(cursor, contact, overwrite):
+    first_name = contact.get("first_name", "")
+    last_name = contact.get("last_name", "")
+    phone_number = contact.get("phone_number", "")
+    email = contact.get("email", "")
+    birthday = contact.get("birthday", "")
+    group_name = contact.get("group", "Other")
+    phones = contact.get("phones", [])
+
+    if not phones and phone_number:
+        phones = [{"phone": phone_number, "type": contact.get("phone_type", "mobile")}]
+
+    group_id = get_group_id(cursor, group_name)
+
+    cursor.execute(
+        """
+        SELECT id
+        FROM phonebook
+        WHERE first_name = %s AND last_name = %s
+        """,
+        (first_name, last_name)
+    )
+    existing = cursor.fetchone()
+
+    if existing and not overwrite:
+        return "skipped"
+
+    if existing and overwrite:
+        contact_id = existing[0]
+        cursor.execute(
+            """
+            UPDATE phonebook
+            SET phone_number = %s,
+                email = %s,
+                birthday = %s,
+                group_id = %s
+            WHERE id = %s
+            """,
+            (phone_number, email, birthday or None, group_id, contact_id)
+        )
+        cursor.execute("DELETE FROM phones WHERE contact_id = %s", (contact_id,))
+    else:
+        cursor.execute(
+            """
+            INSERT INTO phonebook (first_name, last_name, phone_number, email, birthday, group_id)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+            """,
+            (first_name, last_name, phone_number, email, birthday or None, group_id)
+        )
+        contact_id = cursor.fetchone()[0]
+
+    for phone in phones:
+        cursor.execute(
+            """
+            INSERT INTO phones (contact_id, phone, type)
+            VALUES (%s, %s, %s)
+            """,
+            (contact_id, phone.get("phone", ""), get_phone_type(phone.get("type", "mobile")))
+        )
+
+    if existing:
+        return "overwritten"
+    return "inserted"
+
 
 def add_contact():
     first_name = input("First name: ")
@@ -340,7 +432,7 @@ def sort_contacts():
     cursor = conn.cursor()
 
     cursor.execute(f"""
-        SELECT 
+        SELECT
             p.id,
             p.first_name,
             p.last_name,
@@ -542,6 +634,161 @@ def delete_by_id_or_phone():
     finally:
         cursor.close()
         conn.close()
+
+# JSON
+def export_to_json():
+    file_name = input("JSON name: ")
+    if file_name == "":
+        file_name = json_path
+
+    conn = connect()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            p.id,
+            p.first_name,
+            p.last_name,
+            p.phone_number,
+            p.email,
+            p.birthday,
+            g.name
+        FROM phonebook p
+        LEFT JOIN groups g ON p.group_id = g.id
+        ORDER BY p.id
+    """)
+    rows = cursor.fetchall()
+
+    contacts = []
+    for row in rows:
+        cursor.execute(
+            """
+            SELECT phone, type
+            FROM phones
+            WHERE contact_id = %s
+            ORDER BY id
+            """,
+            (row[0],)
+        )
+        phones = []
+        for phone in cursor.fetchall():
+            phones.append({"phone": phone[0], "type": phone[1]})
+
+        contacts.append({
+            "first_name": row[1],
+            "last_name": row[2],
+            "phone_number": row[3],
+            "email": row[4],
+            "birthday": str(row[5]) if row[5] else "",
+            "group": row[6],
+            "phones": phones
+        })
+
+    with open(file_name, "w") as f:
+        json.dump(contacts, f, indent=4)
+
+    print("export success")
+
+    cursor.close()
+    conn.close()
+
+
+def import_from_json():
+    file_name = input("JSON name: ")
+    if file_name == "":
+        file_name = json_path
+
+    with open(file_name, "r") as f:
+        contacts = json.load(f)
+
+    if isinstance(contacts, dict):
+        contacts = contacts.get("contacts", [])
+
+    inserted = 0
+    skipped = 0
+    overwritten = 0
+
+    conn = connect()
+    cursor = conn.cursor()
+
+    try:
+        for contact in contacts:
+            cursor.execute(
+                """
+                SELECT id
+                FROM phonebook
+                WHERE first_name = %s AND last_name = %s
+                """,
+                (contact.get("first_name", ""), contact.get("last_name", ""))
+            )
+            existing = cursor.fetchone()
+            overwrite = False
+
+            if existing:
+                answer = input(f"{contact.get('first_name')} {contact.get('last_name')} exists. skip or overwrite: ")
+                if answer == "overwrite":
+                    overwrite = True
+                else:
+                    skipped += 1
+                    continue
+
+            result = insert_imported_contact(cursor, contact, overwrite)
+            if result == "inserted":
+                inserted += 1
+            elif result == "overwritten":
+                overwritten += 1
+            else:
+                skipped += 1
+
+        conn.commit()
+        print(f"inserted: {inserted}, overwritten: {overwritten}, skipped: {skipped}")
+    except Exception as e:
+        conn.rollback()
+        print(f"Error: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def import_from_csv():
+    file_name = input("CSV file name: ")
+    if file_name == "":
+        file_name = csv_path
+
+    inserted = 0
+    skipped = 0
+
+    conn = connect()
+    cursor = conn.cursor()
+
+    try:
+        with open(file_name, "r") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                contact = {
+                    "first_name": row.get("first_name") or row.get("name") or "",
+                    "last_name": row.get("last_name") or row.get("surname") or "",
+                    "phone_number": row.get("phone_number") or row.get("phone") or "",
+                    "email": row.get("email") or "",
+                    "birthday": row.get("birthday") or "",
+                    "group": row.get("group") or "Other",
+                    "phone_type": row.get("phone_type") or row.get("type") or "mobile"
+                }
+
+                result = insert_imported_contact(cursor, contact, False)
+                if result == "inserted":
+                    inserted += 1
+                else:
+                    skipped += 1
+
+        conn.commit()
+        print(f"inserted: {inserted}, skipped: {skipped}")
+    except Exception as e:
+        conn.rollback()
+        print(f"Error: {e}")
+    finally:
+        cursor.close()
+        conn.close()
 #######################################################################
 
 
@@ -552,7 +799,7 @@ if __name__ == "__main__":
     print()
 
     while True:
-        whatchoose = int(input("1 - update contact, 2 - search querry\n3 - add contact, 4 - delete contact\n\n5 - find using functions\n6 - insert using procedure\n7 - insert many users using procedures\n8 - paginate\n9 - delete by id or phone using procedure\n10 - show contact phones\n11 - filter by group\n12 - search by email\n13 - sort contacts\n14 - paginate navigation\n\n"))
+        whatchoose = int(input("1 - update contact, 2 - search querry\n3 - add contact, 4 - delete contact\n\n5 - find using functions\n6 - insert using procedure\n7 - insert many users using procedures\n8 - paginate\n9 - delete by id or phone using procedure\n10 - show contact phones\n11 - filter by group\n12 - search by email\n13 - sort contacts\n14 - paginate navigation\n15 - export to json\n16 - import from json\n17 - import from csv\n\n"))
         if whatchoose == 1:
             update_contact()
             print()
@@ -614,5 +861,16 @@ if __name__ == "__main__":
             paginate_with_navigation()
             print()
             print()
+        elif whatchoose == 15:
+            export_to_json()
+            print()
+            print()
+        elif whatchoose == 16:
+            import_from_json()
+            print()
+            print()
+        elif whatchoose == 17:
+            import_from_csv()
+            print()
+            print()
         print_tb()
-
