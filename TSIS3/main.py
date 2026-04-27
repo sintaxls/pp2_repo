@@ -77,6 +77,10 @@ obstacle_width = 40
 obstacle_height = 40
 base_obstacle_speed = 150
 
+coins = []
+coin_width = 22
+coin_height = 25
+
 
 # MANHOLE
 manhole = pg.image.load('TSIS3/assets/manhole.png')
@@ -84,6 +88,21 @@ manhole = pg.transform.scale(manhole, (65, 65))
 score = 0
 max_score = 0
 last_score = 0
+
+# COINS
+coin = pg.image.load('TSIS3/assets/coin.png')
+coin = pg.transform.scale(coin, (coin_width, coin_height))
+coin2 = pg.image.load('TSIS3/assets/coin2.png')
+coin2 = pg.transform.scale(coin2, (coin_width, coin_height))
+
+blue_score = 0
+pink_score = 0
+last_blue_score = 0
+last_pink_score = 0
+blue_coins = 0
+pink_coins = 0
+last_blue_coins = 0
+last_pink_coins = 0
 
 # DIFFICULTY
 difficulty = 0.5
@@ -116,10 +135,10 @@ def settings_page():
     settings_running = True
     while settings_running:
         screen.fill(GREEN)
-        text_surface = font.render("Settings", True, BLACK)
+        text_surface = font.render("settings", True, BLACK)
         screen.blit(text_surface, (230, 30))
         # BACK
-        if draw_button(20, 10, 95, 30, YELLOW, GRAY, "Back", BLACK):
+        if draw_button(20, 10, 95, 30, YELLOW, GRAY, "back", BLACK):
             inmenu = True
             setts = False
             return
@@ -138,7 +157,7 @@ def settings_page():
             text_diff = 'hard'
 
         # SHOW DIFFICULTY TEXT
-        difficulty_text = button_font.render(f"Difficulty: {text_diff}", True, BLACK)
+        difficulty_text = button_font.render(f"difficulty: {text_diff}", True, BLACK)
         screen.blit(difficulty_text, (250, 180))
 
         for event in pg.event.get():
@@ -162,30 +181,42 @@ while running:
     if inmenu and not setts:
         screen.fill(GREEN)
 
-        text_surface = font.render("DRIVE DRUNK!", True, BLACK)
+        text_surface = font.render("drive drunk!", True, BLACK)
         screen.blit(text_surface, (190, 30))
 
-        text_max_score = font.render(f"Max score: {int(max_score)}", True, BLACK)
-        screen.blit(text_max_score, (190, 100))
+        text_max_score = font.render(f"max score: {int(max_score)}", True, BLACK)
+        screen.blit(text_max_score, (190, 80))
 
-        text_max_score = font.render(f"Last score: {int(last_score)}", True, BLACK)
-        screen.blit(text_max_score, (190, 170))
+        text_max_score = font.render(f"last score: {int(last_score)}", True, BLACK)
+        screen.blit(text_max_score, (190, 120))
+
+        text_blue_score = button_font.render(f"blue score: {int(last_blue_score)}", True, BLACK)
+        screen.blit(text_blue_score, (190, 165))
+
+        text_pink_score = button_font.render(f"pink score: {int(last_pink_score)}", True, BLACK)
+        screen.blit(text_pink_score, (190, 195))
+
+        text_blue_coins = button_font.render(f"blue coins: {int(last_blue_coins)}", True, BLACK)
+        screen.blit(text_blue_coins, (190, 225))
+
+        text_pink_coins = button_font.render(f"pink coins: {int(last_pink_coins)}", True, BLACK)
+        screen.blit(text_pink_coins, (190, 255))
 
         if firstwin == True:
-            text_max_score = font.render(f"BLUE WINS!", True, BLACK)
-            screen.blit(text_max_score, (190, 240))
+            text_max_score = font.render(f"blue wins!", True, BLACK)
+            screen.blit(text_max_score, (190, 305))
         elif firstwin == False:
-            text_max_score = font.render(f"PINK WINS!", True, BLACK)
-            screen.blit(text_max_score, (190, 240))
+            text_max_score = font.render(f"pink wins!", True, BLACK)
+            screen.blit(text_max_score, (190, 305))
 
         # START
-        if draw_button(20, 180, 95, 30, YELLOW, GRAY, "Start", BLACK):
+        if draw_button(20, 180, 95, 30, YELLOW, GRAY, "start", BLACK):
             inmenu = False
         # SETTINGS
-        if draw_button(20, 220, 95, 30, WHITE, GRAY, "Settings", BLACK):
+        if draw_button(20, 220, 95, 30, WHITE, GRAY, "settings", BLACK):
             setts = True
         # QUIT
-        if draw_button(20, 260, 95, 30, WHITE, GRAY, "Quit", BLACK):
+        if draw_button(20, 260, 95, 30, WHITE, GRAY, "quit", BLACK):
             sys.exit()
 
         for event in pg.event.get():
@@ -259,6 +290,29 @@ while running:
                 'height': obstacle_height
             })
 
+        # COIN SPAWN
+        if random.random() < difficulty * 0.02:
+            coin_y = random.randint(105, 105 + 191 - coin_height)
+            coin_value = 1
+            if random.randint(1, 5) == 1:
+                coin_value = 2
+
+            coin_rect = pg.Rect(WIDTH, coin_y, coin_width, coin_height)
+            can_spawn = True
+            for obstacle in obstacles:
+                obstacle_rect = pg.Rect(obstacle['x'] - 15, obstacle['y'] - 15, 65, 65)
+                if coin_rect.colliderect(obstacle_rect):
+                    can_spawn = False
+
+            if can_spawn:
+                coins.append({
+                    'x': float(WIDTH),
+                    'y': coin_y,
+                    'width': coin_width,
+                    'height': coin_height,
+                    'value': coin_value
+                })
+
         # MOVE OBSTACLE
         obstacle_speed = base_obstacle_speed / fps / (1.05 - difficulty)
         for obstacle in obstacles:
@@ -272,8 +326,17 @@ while running:
             if car_rect.colliderect(obstacle_rect): #or car_top_rect.colliderect(obstacle_rect):
                 inmenu = True
                 obstacles = []
+                coins = []
+                last_blue_score = blue_score
+                last_pink_score = pink_score
+                last_blue_coins = blue_coins
+                last_pink_coins = pink_coins
                 last_score = score
                 score = 0
+                blue_score = 0
+                pink_score = 0
+                blue_coins = 0
+                pink_coins = 0
                 cx = 0
                 cy = 200
 
@@ -284,8 +347,17 @@ while running:
             if car_rect2.colliderect(obstacle_rect): #or car_top_rect.colliderect(obstacle_rect):
                 inmenu = True
                 obstacles = []
+                coins = []
+                last_blue_score = blue_score
+                last_pink_score = pink_score
+                last_blue_coins = blue_coins
+                last_pink_coins = pink_coins
                 last_score = score
                 score = 0
+                blue_score = 0
+                pink_score = 0
+                blue_coins = 0
+                pink_coins = 0
                 cx = 0
                 cy = 200
                 cx2 = 0
@@ -293,32 +365,75 @@ while running:
                 firstwin = True
 
             # ADD SCORE, REMOVE OBSTACLE
-            if obstacle_rect.x + obstacle['width'] < 0 and 50 < cy <250:
+            if obstacle_rect.x + obstacle['width'] < 0:
                 obstacles.remove(obstacle)
-                score += 2
+                if 50 < cy < 250:
+                    blue_score += 2
+                if 50 < cy2 < 250:
+                    pink_score += 2
+                score = blue_score + pink_score
                 if max_score < score:
                     max_score = score
-            elif obstacle_rect.x + obstacle['width'] < 0 and (cy < 50 or cy > 250):
-                obstacles.remove(obstacle)
+
+        # MOVE COINS
+        for one_coin in coins:
+            one_coin['x'] -= obstacle_speed
+            coin_rect = pg.Rect(one_coin['x'], one_coin['y'], one_coin['width'], one_coin['height'])
+
+            if one_coin['value'] == 2:
+                screen.blit(coin2, (one_coin['x'], one_coin['y']))
+            else:
+                screen.blit(coin, (one_coin['x'], one_coin['y']))
+
+            if car_rect.colliderect(coin_rect):
+                blue_coins += one_coin['value']
+                blue_score += one_coin['value']
+                score = blue_score + pink_score
+                coins.remove(one_coin)
+            elif car_rect2.colliderect(coin_rect):
+                pink_coins += one_coin['value']
+                pink_score += one_coin['value']
+                score = blue_score + pink_score
+                coins.remove(one_coin)
+            elif coin_rect.x + one_coin['width'] < 0:
+                coins.remove(one_coin)
+
+            if max_score < score:
+                max_score = score
+
         # MINUS SCORE FOR CHEATING
         if cy < 50 or cy > 250:
-            score -= (2 / fps) * (difficulty * 10)
+            blue_score -= (2 / fps) * (difficulty * 10)
 
         if cy2 < 50 or cy2 > 250:
-            score -= (2 / fps) * (difficulty * 10)
+            pink_score -= (2 / fps) * (difficulty * 10)
+
+        score = blue_score + pink_score
 
         # BACK BUTTON
-        if draw_button(20, 10, 95, 30, YELLOW, GRAY, "Back", BLACK):
+        if draw_button(20, 10, 95, 30, YELLOW, GRAY, "back", BLACK):
             inmenu = True
             obstacles = []
+            coins = []
+            last_blue_score = blue_score
+            last_pink_score = pink_score
+            last_blue_coins = blue_coins
+            last_pink_coins = pink_coins
             last_score = score
             score = 0
+            blue_score = 0
+            pink_score = 0
+            blue_coins = 0
+            pink_coins = 0
             cx = 0
             cy = 200
 
         # SHOW SCORE
-        score_text = font.render(f"Score: {int(score)}", True, YELLOW)
-        screen.blit(score_text, (420, 10))
+        score_text = button_font.render(f"blue score: {int(blue_score)}", True, YELLOW)
+        screen.blit(score_text, (390, 10))
+
+        score_text = button_font.render(f"pink score: {int(pink_score)}", True, YELLOW)
+        screen.blit(score_text, (390, 40))
 
         # DRAW CAR
         screen.blit(car_img, (cx, cy))
