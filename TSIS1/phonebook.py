@@ -40,13 +40,13 @@ def create_phonebook_table():
         
         cursor.execute(create_table)
         
-        with open(csv_path, 'r') as f:
-            next(f)
-            cursor.copy_from(
-                f,
-                'phonebook',
-                columns=('first_name', 'last_name', 'phone_number'),
-                sep=',')
+        # with open(csv_path, 'r') as f:
+        #     next(f)
+        #     cursor.copy_from(
+        #         f,
+        #         'phonebook',
+        #         columns=('first_name', 'last_name', 'phone_number'),
+        #         sep=',')
         cursor.execute(create_table)
         conn.commit()
         print("Phonebook created")

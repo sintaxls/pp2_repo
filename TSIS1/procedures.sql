@@ -6,8 +6,12 @@ LANGUAGE plpgsql
 AS $$
 
 BEGIN
-    INSERT INTO phonebook (first_name, last_name, phone_number) VALUES (p_first_name, p_last_name, p_phone_number)
-    ON CONFLICT (first_name, last_name) DO UPDATE SET phone_number = EXCLUDED.phone_number;
+    INSERT INTO phonebook (first_name, last_name, phone_number)
+    VALUES (p_first_name, p_last_name, p_phone_number)
+    ON CONFLICT (phone_number)
+    DO UPDATE
+    SET first_name = EXCLUDED.first_name,
+        last_name = EXCLUDED.last_name;
 END;
 $$;
 
@@ -46,9 +50,10 @@ BEGIN
         ELSE
             INSERT INTO phonebook (first_name, last_name, phone_number)
             VALUES (v_first_name, v_last_name, v_phone_number)
-            ON CONFLICT (first_name, last_name)
+            ON CONFLICT (phone_number)
             DO UPDATE
-            SET phone_number = EXCLUDED.phone_number;
+            SET first_name = EXCLUDED.first_name,
+                last_name = EXCLUDED.last_name;
         END IF;
     END LOOP;
 END;
