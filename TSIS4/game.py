@@ -47,6 +47,8 @@ def new_food(sn):
         if (x, y) not in sn:
             w, col, tm = random.choice(foods)
             return {"p": (x, y), "w": w, "c": col, "t": tm}
+        
+            # p - pos, w - worth, c - col, t - timer
 
 
 def draw(sn, fd, sc, lv, bs):
@@ -158,11 +160,11 @@ def run(name):
     dx = 1
     dy = 0
     
-    sc = 0
-    lv = 1
-    eat = 0
-    sp = 8
-    bs = db.best(name)
+    sc = 0 # score
+    lv = 1 # level difficulty
+    eat = 0 # how many foods are eaten
+    sp = 8 # speed (fps)
+    bs = db.best(name) # best score
     fd = new_food(sn)
     done = False
 
@@ -197,7 +199,7 @@ def run(name):
             break
 
         sn.insert(0, hd)
-        if hd == fd["p"]:
+        if hd == fd["p"]: # if eat food
             sc += fd["w"]
             eat += 1
             if eat % 4 == 0:
