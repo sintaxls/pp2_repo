@@ -1,4 +1,2 @@
 import game
-
-
 game.start()

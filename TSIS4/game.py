@@ -12,31 +12,31 @@ clk = pygame.time.Clock()
 font = pygame.font.SysFont("arial", 22)
 big = pygame.font.SysFont("arial", 42)
 
-white = (240, 240, 240)
-black = (15, 15, 15)
-green = (40, 170, 70)
-dark = (20, 100, 35)
-red = (210, 55, 55)
-yellow = (230, 185, 45)
-blue = (55, 120, 200)
-gray = (80, 80, 80)
+WHITE = (240, 240, 240)
+BLACK = (15, 15, 15)
+GREEN = (40, 170, 70)
+DARK = (20, 100, 35)
+RED = (210, 55, 55)
+YELLOW = (230, 185, 45)
+BLUE = (55, 120, 200)
+GRAY = (80, 80, 80)
 
 foods = [
-    (1, red, 180),
-    (2, yellow, 140),
-    (3, blue, 100),
+    (1, RED, 180),
+    (2, YELLOW, 140),
+    (3, BLUE, 100),
 ]
 
 
-def txt(s, x, y, f=font, col=white):
+def txt(s, x, y, f=font, col=WHITE):
     t = f.render(s, True, col)
     win.blit(t, (x, y))
 
 
 def btn(s, r):
-    pygame.draw.rect(win, gray, r)
-    pygame.draw.rect(win, white, r, 2)
-    t = font.render(s, True, white)
+    pygame.draw.rect(win, GRAY, r)
+    pygame.draw.rect(win, WHITE, r, 2)
+    t = font.render(s, True, WHITE)
     win.blit(t, (r.x + (r.w - t.get_width()) // 2, r.y + 12))
 
 
@@ -50,20 +50,20 @@ def new_food(sn):
 
 
 def draw(sn, fd, sc, lv, bs):
-    win.fill(black)
+    win.fill(BLACK)
     # draw wall
     for x in range(cn):
-        pygame.draw.rect(win, gray, (x * cw, 0, cw, cw))
-        pygame.draw.rect(win, gray, (x * cw, (cn - 1) * cw, cw, cw))
+        pygame.draw.rect(win, GRAY, (x * cw, 0, cw, cw))
+        pygame.draw.rect(win, GRAY, (x * cw, (cn - 1) * cw, cw, cw))
     for y in range(cn):
-        pygame.draw.rect(win, gray, (0, y * cw, cw, cw))
-        pygame.draw.rect(win, gray, ((cn - 1) * cw, y * cw, cw, cw))
+        pygame.draw.rect(win, GRAY, (0, y * cw, cw, cw))
+        pygame.draw.rect(win, GRAY, ((cn - 1) * cw, y * cw, cw, cw))
 
     # draw snake
     for i, p in enumerate(sn):
-        col = dark
+        col = DARK
         if i == 0:
-            col = green
+            col = GREEN
         pygame.draw.rect(win, col, (p[0] * cw, p[1] * cw, cw, cw))
 
     # draw food
@@ -79,11 +79,11 @@ def menu():
     r1 = pygame.Rect(160, 250, 180, 55)
     r2 = pygame.Rect(160, 320, 180, 55)
     while True:
-        win.fill(black)
+        win.fill(BLACK)
         txt("snake", 190, 90, big)
         txt("username", 120, 170)
-        pygame.draw.rect(win, gray, (120, 200, 260, 38))
-        pygame.draw.rect(win, white, (120, 200, 260, 38), 2)
+        pygame.draw.rect(win, GRAY, (120, 200, 260, 38))
+        pygame.draw.rect(win, WHITE, (120, 200, 260, 38), 2)
         txt(name, 130, 207)
         btn("play", r1)
         btn("leaderboard", r2)
@@ -110,7 +110,7 @@ def lead():
     r = pygame.Rect(170, 445, 160, 45)
     rows = db.top()
     while True:
-        win.fill(black)
+        win.fill(BLACK)
         txt("leaderboard", 145, 35, big)
         y = 100
         if not rows:
@@ -134,7 +134,7 @@ def over(sc, lv):
     r1 = pygame.Rect(150, 280, 200, 55)
     r2 = pygame.Rect(150, 350, 200, 55)
     while True:
-        win.fill(black)
+        win.fill(BLACK)
         txt("game over", 135, 110, big)
         txt("score " + str(sc), 190, 185)
         txt("level " + str(lv), 190, 220)
