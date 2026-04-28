@@ -128,6 +128,38 @@ def show_contact_phones():
     cursor.close()
     conn.close()
 
+
+def add_additional_phone_by_id():
+    contact_id = int(input("Contact id: "))
+    phone = input("Additional phone number: ")
+    phone_type = get_phone_type(input("Phone type (home/work/mobile): "))
+
+    conn = connect()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT id FROM phonebook WHERE id = %s", (contact_id,))
+        if cursor.fetchone() is None:
+            print("Contact not found")
+            return
+
+        cursor.execute(
+            """
+            INSERT INTO phones (contact_id, phone, type)
+            VALUES (%s, %s, %s)
+            """,
+            (contact_id, phone, phone_type)
+        )
+        conn.commit()
+        print("Additional phone added successfully")
+    except Exception as e:
+        conn.rollback()
+        print(f"Error: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+
 def update_contact():
     print("What update? enter 1 - first name \nenter 2 - last name \nenter 3 - phone number \n")
     what = int(input())
@@ -799,7 +831,7 @@ if __name__ == "__main__":
     print()
 
     while True:
-        whatchoose = int(input("1 - update contact, 2 - search querry\n3 - add contact, 4 - delete contact\n\n5 - find using functions\n6 - insert using procedure\n7 - insert many users using procedures\n8 - paginate\n9 - delete by id or phone using procedure\n10 - show contact phones\n11 - filter by group\n12 - search by email\n13 - sort contacts\n14 - paginate navigation\n15 - export to json\n16 - import from json\n17 - import from csv\n\n"))
+        whatchoose = int(input("1 - update contact, 2 - search querry\n3 - add contact, 4 - delete contact\n\n5 - find using functions\n6 - insert using procedure\n7 - insert many users using procedures\n8 - paginate\n9 - delete by id or phone using procedure\n10 - show contact phones\n11 - filter by group\n12 - search by email\n13 - sort contacts\n14 - paginate navigation\n15 - export to json\n16 - import from json\n17 - import from csv\n18 - add additional phone by id\n\n"))
         if whatchoose == 1:
             update_contact()
             print()
@@ -871,6 +903,10 @@ if __name__ == "__main__":
             print()
         elif whatchoose == 17:
             import_from_csv()
+            print()
+            print()
+        elif whatchoose == 18:
+            add_additional_phone_by_id()
             print()
             print()
         print_tb()

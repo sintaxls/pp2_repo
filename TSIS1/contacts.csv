@@ -1,6 +1,16 @@
-name,surname,phone
-John,Smith,+7 701 555 0101
-Maria,Garcia,+7 702 555 0102
-David,Johnson,+7 703 555 0103
-Emma,Williams,+7 704 555 0104
-Michael,Brown,+7 705 555 0105
+name,surname,phone,email
+John,Smith,+7 701 555 0101,john.smith@example.com
+Maria,Garcia,+7 702 555 0102,maria.garcia@example.com
+David,Johnson,+7 703 555 0103,david.johnson@example.com
+Emma,Williams,+7 704 555 0104,emma.williams@example.com
+Michael,Brown,+7 705 555 0105,michael.brown@example.com
+Sarah,Davis,+7 706 555 0106,sarah.davis@example.com
+Daniel,Miller,+7 707 555 0107,daniel.miller@example.com
+Olivia,Wilson,+7 708 555 0108,olivia.wilson@example.com
+James,Moore,+7 709 555 0109,james.moore@example.com
+Sophia,Taylor,+7 700 555 0110,sophia.taylor@example.com
+William,Anderson,+7 701 555 0111,william.anderson@example.com
+Ava,Thomas,+7 702 555 0112,ava.thomas@example.com
+Alexander,Jackson,+7 703 555 0113,alexander.jackson@example.com
+Mia,White,+7 704 555 0114,mia.white@example.com
+Ethan,Harris,+7 705 555 0115,ethan.harris@example.com
