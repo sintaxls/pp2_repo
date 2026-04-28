@@ -1,7 +1,7 @@
-cw = 25
-cn = 20
-ww = cw * cn
-hh = cw * cn + 60
+cw = 25 # cell width
+cn = 20 # number of cells  
+ww = cw * cn # width of window
+hh = cw * cn + 60 # window height
 
 db = {
     "dbname": "snake",

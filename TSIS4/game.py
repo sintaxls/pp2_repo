@@ -7,7 +7,7 @@ from config import cw, cn, ww, hh
 pygame.init()
 
 win = pygame.display.set_mode((ww, hh))
-pygame.display.set_caption("snake")
+pygame.display.set_caption("the best snake game ever created")
 clk = pygame.time.Clock()
 font = pygame.font.SysFont("arial", 22)
 big = pygame.font.SysFont("arial", 42)
@@ -150,11 +150,14 @@ def over(sc, lv):
                 if r2.collidepoint(e.pos):
                     return "menu"
 
-
+############################################################################
 def run(name):
-    sn = [(10, 10), (9, 10), (8, 10)]
+    sn = [(10, 10), (9, 10), (8, 10)] # list with snake cell pos
+    
+    # snake movement direction
     dx = 1
     dy = 0
+    
     sc = 0
     lv = 1
     eat = 0
@@ -190,7 +193,7 @@ def run(name):
         if hd in sn[:-1]:
             done = True
 
-        if done:
+        if done: # if hit done
             break
 
         sn.insert(0, hd)
