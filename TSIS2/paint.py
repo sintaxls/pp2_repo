@@ -17,7 +17,7 @@ COLORS = [
     ("blue", (45, 100, 220), pygame.K_b),
 ]
 
-STROKE_SIZES = [
+BRUSH_SIZES = [
     ("small", 2, pygame.K_1),
     ("medium", 5, pygame.K_2),
     ("large", 10, pygame.K_3),
@@ -45,14 +45,14 @@ def main():
     pygame.display.set_caption(
         "paint: p pencil, l line, f fill, x text, 1 small, 2 medium, 3 large"
     )
-    clock = pygame.time.Clock()
+    clock = pygame.time.Clock() # FPS
     font = pygame.font.SysFont(None, 20)
     text_font = pygame.font.SysFont(None, 32)
 
     canvas = pygame.Surface((WIDTH, HEIGHT - TOOLBAR_HEIGHT))
     canvas.fill(BACKGROUND_COLOR)
 
-    stroke_size = 5
+    brush_size = 5
     tool = "pencil"
     color = COLORS[0][1]
     drawing = False
@@ -98,25 +98,25 @@ def main():
                 if selected_tool is not None:
                     tool = selected_tool
                 elif selected_size is not None:
-                    stroke_size = selected_size
+                    brush_size = selected_size
                 elif selected_color is not None:
                     color = selected_color
                     if tool == "eraser":
                         tool = "pencil"
                 elif event.key == pygame.K_MINUS:
-                    stroke_size = previous_size(stroke_size)
+                    brush_size = previous_size(brush_size)
                 elif event.key == pygame.K_EQUALS:
-                    stroke_size = next_size(stroke_size)
+                    brush_size = next_size(brush_size)
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button in (4, 5):
-                    stroke_size = resize_brush(stroke_size, event.button)
+                    brush_size = resize_brush(brush_size, event.button)
                     continue
 
-                if event.button != 1:
+                if event.button != 1: # left click for drawing
                     continue
 
-                if event.pos[1] < TOOLBAR_HEIGHT:
+                if event.pos[1] < TOOLBAR_HEIGHT: # check toolbar
                     selected_tool, selected_color, selected_size = handle_toolbar_click(
                         event.pos, tool_buttons, color_buttons, size_buttons
                     )
@@ -127,7 +127,7 @@ def main():
                         if tool == "eraser":
                             tool = "pencil"
                     if selected_size is not None:
-                        stroke_size = selected_size
+                        brush_size = selected_size
                     continue
 
                 drawing = True
@@ -144,10 +144,10 @@ def main():
                     text_value = ""
                     drawing = False
                 elif tool == "pencil":
-                    draw_pencil_line(canvas, start_pos, start_pos, stroke_size, color)
+                    draw_pencil_line(canvas, start_pos, start_pos, brush_size, color)
                 elif tool == "eraser":
                     draw_stroke(
-                        canvas, start_pos, start_pos, stroke_size, active_color(tool, color)
+                        canvas, start_pos, start_pos, brush_size, active_color(tool, color)
                     )
 
             if event.type == pygame.MOUSEBUTTONUP:
@@ -156,21 +156,21 @@ def main():
 
                 end_pos = to_canvas_pos(event.pos)
                 if tool == "line":
-                    draw_pencil_line(canvas, start_pos, end_pos, stroke_size, color)
+                    draw_pencil_line(canvas, start_pos, end_pos, brush_size, color)
                 elif tool == "rectangle":
-                    draw_rectangle(canvas, start_pos, end_pos, color, stroke_size)
+                    draw_rectangle(canvas, start_pos, end_pos, color, brush_size)
                 elif tool == "circle":
-                    draw_circle(canvas, start_pos, end_pos, color, stroke_size)
+                    draw_circle(canvas, start_pos, end_pos, color, brush_size)
                 elif tool == "right_triangle":
                     draw_polygon(
-                        canvas, right_triangle_points(start_pos, end_pos), color, stroke_size
+                        canvas, right_triangle_points(start_pos, end_pos), color, brush_size
                     )
                 elif tool == "equilateral_triangle":
                     draw_polygon(
-                        canvas, equilateral_triangle_points(start_pos, end_pos), color, stroke_size
+                        canvas, equilateral_triangle_points(start_pos, end_pos), color, brush_size
                     )
                 elif tool == "rhombus":
-                    draw_polygon(canvas, rhombus_points(start_pos, end_pos), color, stroke_size)
+                    draw_polygon(canvas, rhombus_points(start_pos, end_pos), color, brush_size)
 
                 drawing = False
                 start_pos = None
@@ -180,11 +180,11 @@ def main():
             if event.type == pygame.MOUSEMOTION and drawing:
                 current_pos = to_canvas_pos(event.pos)
                 if tool == "pencil":
-                    draw_pencil_line(canvas, last_pos, current_pos, stroke_size, color)
+                    draw_pencil_line(canvas, last_pos, current_pos, brush_size, color)
                     last_pos = current_pos
                 elif tool == "eraser":
                     draw_stroke(
-                        canvas, last_pos, current_pos, stroke_size, active_color(tool, color)
+                        canvas, last_pos, current_pos, brush_size, active_color(tool, color)
                     )
                     last_pos = current_pos
 
@@ -192,13 +192,13 @@ def main():
         screen.blit(canvas, (0, TOOLBAR_HEIGHT))
 
         if drawing and start_pos is not None and current_pos is not None:
-            draw_shape_preview(screen, tool, start_pos, current_pos, color, stroke_size)
+            draw_shape_preview(screen, tool, start_pos, current_pos, color, brush_size)
 
         if text_active:
             draw_text_preview(screen, text_font, text_value, text_pos, color)
 
         draw_toolbar(
-            screen, font, tool_buttons, color_buttons, size_buttons, tool, color, stroke_size
+            screen, font, tool_buttons, color_buttons, size_buttons, tool, color, brush_size
         )
         pygame.display.flip()
         clock.tick(60)
@@ -209,7 +209,7 @@ def build_toolbar_hitboxes(font):
     tool_buttons = []
     x = 8
     for tool_name, label, _ in TOOLS:
-        width = font.size(label)[0] + 18
+        width = font.size(label)[0] + 18 # width based on text size
         rect = pygame.Rect(x, 8, width, 32)
         tool_buttons.append((rect, tool_name, label))
         x += width + 6
@@ -225,7 +225,7 @@ def build_toolbar_hitboxes(font):
     # here we build size buttons
     size_buttons = []
     x += 10
-    for name, size, _ in STROKE_SIZES:
+    for name, size, _ in BRUSH_SIZES:
         width = font.size(name)[0] + 18
         rect = pygame.Rect(x, 12, width, 32)
         size_buttons.append((rect, name, size))
@@ -234,7 +234,7 @@ def build_toolbar_hitboxes(font):
     return tool_buttons, color_buttons, size_buttons
 
 
-def draw_toolbar(screen, font, tool_buttons, color_buttons, size_buttons, tool, color, stroke_size):
+def draw_toolbar(screen, font, tool_buttons, color_buttons, size_buttons, tool, color, brush_size):
     pygame.draw.rect(screen, PANEL_COLOR, (0, 0, WIDTH, TOOLBAR_HEIGHT))
 
     for rect, tool_name, label in tool_buttons:
@@ -250,13 +250,13 @@ def draw_toolbar(screen, font, tool_buttons, color_buttons, size_buttons, tool, 
         pygame.draw.rect(screen, border, rect, 3 if rgb == color else 1, border_radius=3)
 
     for rect, name, size in size_buttons:
-        fill = PANEL_ACTIVE if size == stroke_size else (58, 58, 58)
+        fill = PANEL_ACTIVE if size == brush_size else (58, 58, 58)
         pygame.draw.rect(screen, fill, rect, border_radius=4)
         pygame.draw.rect(screen, (120, 120, 120), rect, 1, border_radius=4)
         text = font.render(name, True, TEXT_COLOR)
         screen.blit(text, text.get_rect(center=rect.center))
 
-    size_text = font.render(f"size {stroke_size}", True, TEXT_COLOR)
+    size_text = font.render(f"size {brush_size}", True, TEXT_COLOR)
     screen.blit(size_text, (WIDTH - size_text.get_width() - 12, 16))
 
 
@@ -291,30 +291,30 @@ def color_from_key(key):
 
 
 def size_from_key(key):
-    for _, size, shortcut in STROKE_SIZES:
+    for _, size, shortcut in BRUSH_SIZES:
         if key == shortcut:
             return size
     return None
 
 
-def resize_brush(stroke_size, mouse_button):
+def resize_brush(brush_size, mouse_button):
     if mouse_button == 4:
-        return next_size(stroke_size)
+        return next_size(brush_size)
     if mouse_button == 5:
-        return previous_size(stroke_size)
-    return stroke_size
+        return previous_size(brush_size)
+    return brush_size
 
 
-def next_size(stroke_size):
-    sizes = [size for _, size, _ in STROKE_SIZES]
-    index = sizes.index(stroke_size)
+def next_size(brush_size):
+    sizes = [size for _, size, _ in BRUSH_SIZES]
+    index = sizes.index(brush_size)
     index = min(index + 1, len(sizes) - 1)
     return sizes[index]
 
 
-def previous_size(stroke_size):
-    sizes = [size for _, size, _ in STROKE_SIZES]
-    index = sizes.index(stroke_size)
+def previous_size(brush_size):
+    sizes = [size for _, size, _ in BRUSH_SIZES]
+    index = sizes.index(brush_size)
     index = max(index - 1, 0)
     return sizes[index]
 

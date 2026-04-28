@@ -443,6 +443,7 @@ while running:
 
         # OBSTACLE SPAWN
         if random.random() < difficulty * 0.02:
+            # MANHOLE
             if random.random() < 0.7:
                 obs_y = random.randint(105, 105 + 191 - obstacle_height)
                 obstacles.append({
@@ -453,6 +454,7 @@ while running:
                     'type': 'manhole'
                 })
             else:
+                # TRAFFIC
                 obs_y = random.randint(105, 105 + 191 - 20)
                 obstacles.append({
                     'x': float(WIDTH),
@@ -488,7 +490,7 @@ while running:
                     'value': coin_value
                 })
 
-        # POWERUP SPAWN
+        # POWER SPAWN
         if random.random() < difficulty * 0.01:
             power_y = random.randint(105, 105 + 191 - power_height)
             power_type = random.choice(['nitro', 'shield', 'repair'])
